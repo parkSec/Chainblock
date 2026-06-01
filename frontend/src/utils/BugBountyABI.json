@@ -1,0 +1,297 @@
+﻿[
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "answerId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "questionId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "solver",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "string",
+                           "name":  "summary",
+                           "type":  "string"
+                       }
+                   ],
+        "name":  "AnswerSubmitted",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "questionId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "answerId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "solver",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint256",
+                           "name":  "amountPaid",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "AnswerUnlocked",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "questionId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "author",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint256",
+                           "name":  "bountyAmount",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "string",
+                           "name":  "ipfsCID",
+                           "type":  "string"
+                       }
+                   ],
+        "name":  "QuestionCreated",
+        "type":  "event"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "answerCount",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "answers",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "id",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "questionId",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "address",
+                            "name":  "solver",
+                            "type":  "address"
+                        },
+                        {
+                            "internalType":  "string",
+                            "name":  "encryptedAnswerCID",
+                            "type":  "string"
+                        },
+                        {
+                            "internalType":  "string",
+                            "name":  "summary",
+                            "type":  "string"
+                        },
+                        {
+                            "internalType":  "bool",
+                            "name":  "isUnlocked",
+                            "type":  "bool"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "string",
+                           "name":  "_ipfsCID",
+                           "type":  "string"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "_bountyAmount",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "createQuestion",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "_answerId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "isUnlocked",
+        "outputs":  [
+                        {
+                            "internalType":  "bool",
+                            "name":  "",
+                            "type":  "bool"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "questionCount",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "questions",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "id",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "address",
+                            "name":  "author",
+                            "type":  "address"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "bountyAmount",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "string",
+                            "name":  "ipfsCID",
+                            "type":  "string"
+                        },
+                        {
+                            "internalType":  "bool",
+                            "name":  "isResolved",
+                            "type":  "bool"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "_questionId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "string",
+                           "name":  "_encryptedAnswerCID",
+                           "type":  "string"
+                       },
+                       {
+                           "internalType":  "string",
+                           "name":  "_summary",
+                           "type":  "string"
+                       }
+                   ],
+        "name":  "submitAnswer",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "_questionId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "_answerId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "unlockAnswer",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "payable",
+        "type":  "function"
+    }
+]
