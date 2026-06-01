@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "npm run build && wrangler pages deploy dist",
+    "deploy:staging": "npm run build && wrangler pages deploy dist --branch staging"
   },
   "dependencies": {
     "react": "^19.2.6",
