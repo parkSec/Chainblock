@@ -31,15 +31,37 @@ export function QuestionDetail() {
         }
 
         const bountyAmount = Number(q.bountyAmount) / 1e18
+        
+        // localStorage에서 질문 데이터 조회
+        let questionData = {
+          title: `Question #${q.id}`,
+          description: '설명을 불러올 수 없습니다',
+          code: ''
+        }
+        
+        try {
+          const stored = localStorage.getItem(q.ipfsCID)
+          if (stored) {
+            const parsed = JSON.parse(stored)
+            questionData = {
+              title: parsed.title || questionData.title,
+              description: parsed.description || questionData.description,
+              code: parsed.code || questionData.code
+            }
+          }
+        } catch (err) {
+          console.warn('localStorage 데이터 로드 실패:', err)
+        }
+        
         setQuestion({
           id: Number(q.id),
-          title: `Question #${q.id}`,
+          title: questionData.title,
           author: q.author,
           bountyAmount: bountyAmount.toFixed(4),
           isResolved: q.isResolved,
           ipfsCID: q.ipfsCID,
-          description: '이 질문에 대한 상세 설명입니다. (IPFS에서 가져올 수 있습니다)',
-          code: 'const example = () => { /* 코드 */ }'
+          description: questionData.description,
+          code: questionData.code
         })
 
         // 작성자 확인

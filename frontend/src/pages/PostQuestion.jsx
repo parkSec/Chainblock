@@ -43,9 +43,9 @@ export function PostQuestion() {
 
     try {
       setIsSubmitting(true)
-      setStatusMsg('⏳ IPFS에 데이터를 업로드하는 중...')
+      setStatusMsg('⏳ 데이터를 저장하는 중...')
       
-      // IPFS에 업로드 (간단한 JSON으로 임시 처리)
+      // 질문 데이터 준비
       const questionData = {
         title: formData.title,
         description: formData.description,
@@ -55,8 +55,9 @@ export function PostQuestion() {
         timestamp: new Date().toISOString()
       }
       
-      // 실제 구현에서는 Pinata 사용
-      const ipfsCID = 'Qm' + Math.random().toString(36).substring(2, 15)
+      // localStorage에 저장 (실제로는 IPFS Pinata 사용)
+      const ipfsCID = 'question_' + account + '_' + Date.now()
+      localStorage.setItem(ipfsCID, JSON.stringify(questionData))
       
       setStatusMsg('⏳ 지갑에서 서명을 대기 중...')
       const bountyInWei = parseEther(formData.reward.toString())

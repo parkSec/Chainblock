@@ -1,73 +1,123 @@
 import React, { useState, useContext, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ThemeContext } from '../context/ThemeContext'
 import { Web3Context } from '../context/Web3Context'
 
 export function Profile() {
+  const navigate = useNavigate()
   const { isDarkMode } = useContext(ThemeContext)
   const { account, isConnected, getReadContract } = useContext(Web3Context)
 
   const [activeTab, setActiveTab] = useState('questions')
-  const [questions, setQuestions] = useState([])
-  const [submissions, setSubmissions] = useState([])
+  const [userQuestions, setUserQuestions] = useState([])
+  const [userAnswers, setUserAnswers] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!isConnected || !account) return
 
-    const loadUserQuestions = async () => {
+    const loadProfileData = async () => {
       try {
         setLoading(true)
         const contract = getReadContract()
 
-    const questionCount = await contract.questionCount();
-        const userQuestions = []
-        const userAnswers = []
+        const questionCount = await contract.questionCount()
+        const answerCount = await contract.answerCount()
 
-        for (let i = 1; i <= questionCount; i++) {
+        const myQuestions = []
+        const myAnswers = []
+
+        // 내가 등록한 질문 찾기
+        for (let i = 1n; i <= questionCount; i++) {
           try {
-            const question = await contract.questions(i)
-            const answers = await contract.getAnswers(i)
+            const q = await contract.questions(i)
 
-            if (question.author.toLowerCase() === account.toLowerCase()) {
-              userQuestions.push({
-                id: i,
-                title: question.title || `질문 #${i}`,
-                status: answers.length > 0 ? 'open' : 'open',
-                reward: (BigInt(question.bountyAmount) / BigInt(10 ** 18)).toString(),
-                answers: answers.length,
-                date: new Date(Number(question.timestamp) * 1000).toLocaleDateString('ko-KR')
+            if (q.author.toLowerCase() === account.toLowerCase()) {
+              // localStorage에서 실제 질문 데이터 조회
+              let questionTitle = `Question #${i}`
+              let questionDescription = ''
+              let questionCode = ''
+
+              try {
+                const stored = localStorage.getItem(q.ipfsCID)
+                if (stored) {
+                  const data = JSON.parse(stored)
+                  questionTitle = data.title || questionTitle
+                  questionDescription = data.description || ''
+                  questionCode = data.code || ''
+                }
+              } catch (err) {
+                console.warn('질문 데이터 로드 실패:', err)
+              }
+
+              myQuestions.push({
+                id: Number(i),
+                title: questionTitle,
+                description: questionDescription,
+                code: questionCode,
+                bountyAmount: (BigInt(q.bountyAmount) / BigInt(10 ** 18)).toString(),
+                isResolved: q.isResolved,
+                ipfsCID: q.ipfsCID,
+                createdAt: new Date().toLocaleDateString('ko-KR')
               })
             }
-
-            for (const answer of answers) {
-              if (answer.answerer.toLowerCase() === account.toLowerCase()) {
-                const q = await contract.questions(i)
-                userAnswers.push({
-                  id: i,
-                  answerId: answer.id,
-                  title: q.title || `질문 #${i}`,
-                  status: answer.isUnlocked ? 'unlocked' : 'pending',
-                  reward: answer.isUnlocked ? (BigInt(q.bountyAmount) / BigInt(10 ** 18)).toString() : (BigInt(q.bountyAmount) / BigInt(10 ** 18)).toString(),
-                  date: new Date(Number(answer.timestamp) * 1000).toLocaleDateString('ko-KR')
-                })
-              }
-            }
           } catch (err) {
-            console.log(`질문 ${i} 조회 실패:`, err.message)
+            console.error(`질문 ${i} 조회 실패:`, err)
           }
         }
 
-        setQuestions(userQuestions)
-        setSubmissions(userAnswers)
+        // 내가 답변한 질문 찾기
+        for (let i = 1n; i <= answerCount; i++) {
+          try {
+            const a = await contract.answers(i)
+
+            if (a.solver.toLowerCase() === account.toLowerCase()) {
+              // 해당 질문 정보 조회
+              const q = await contract.questions(a.questionId)
+
+              // localStorage에서 질문 데이터 조회
+              let questionTitle = `Question #${a.questionId}`
+              try {
+                const stored = localStorage.getItem(q.ipfsCID)
+                if (stored) {
+                  const data = JSON.parse(stored)
+                  questionTitle = data.title || questionTitle
+                }
+              } catch (err) {
+                console.warn('질문 데이터 로드 실패:', err)
+              }
+
+              myAnswers.push({
+                id: Number(i),
+                questionId: Number(a.questionId),
+                questionTitle: questionTitle,
+                summary: a.summary,
+                isUnlocked: a.isUnlocked,
+                bountyAmount: (BigInt(q.bountyAmount) / BigInt(10 ** 18)).toString(),
+                createdAt: new Date().toLocaleDateString('ko-KR')
+              })
+            }
+          } catch (err) {
+            console.error(`답변 ${i} 조회 실패:`, err)
+          }
+        }
+
+        setUserQuestions(myQuestions)
+        setUserAnswers(myAnswers)
       } catch (err) {
-        console.error('사용자 질문/답변 로드 실패:', err)
+        console.error('프로필 데이터 로드 실패:', err)
       } finally {
         setLoading(false)
       }
     }
 
-    loadUserQuestions()
+    loadProfileData()
   }, [isConnected, account, getReadContract])
+
+  const formatAddress = (addr) => {
+    if (!addr) return '알 수 없음'
+    return `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`
+  }
 
   if (!isConnected) {
     return (
@@ -109,20 +159,20 @@ export function Profile() {
               <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-1`}>
                 등록한 질문
               </p>
-              <p className="text-3xl font-bold text-blue-600">{questions.length}</p>
+              <p className="text-3xl font-bold text-blue-600">{userQuestions.length}</p>
             </div>
             <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
               <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-1`}>
                 제출한 답변
               </p>
-              <p className="text-3xl font-bold text-purple-600">{submissions.length}</p>
+              <p className="text-3xl font-bold text-purple-600">{userAnswers.length}</p>
             </div>
             <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
               <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-1`}>
                 획득한 보상
               </p>
               <p className="text-3xl font-bold text-green-600">
-                {(submissions.reduce((sum, s) => sum + parseFloat(s.reward || 0), 0)).toFixed(2)} ETH
+                {(userAnswers.reduce((sum, a) => sum + (a.isUnlocked ? parseFloat(a.bountyAmount) : 0), 0)).toFixed(2)} ETH
               </p>
             </div>
             <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
@@ -130,7 +180,7 @@ export function Profile() {
                 성공률
               </p>
               <p className="text-3xl font-bold text-orange-600">
-                {submissions.length > 0 ? Math.round((submissions.filter(s => s.status === 'unlocked').length / submissions.length) * 100) : 0}%
+                {userAnswers.length > 0 ? Math.round((userAnswers.filter(a => a.isUnlocked).length / userAnswers.length) * 100) : 0}%
               </p>
             </div>
           </div>
@@ -145,64 +195,69 @@ export function Profile() {
                 activeTab === 'questions'
                   ? 'border-blue-600 text-blue-600'
                   : isDarkMode
-                    ? 'border-transparent text-gray-400 hover:text-gray-300'
-                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                  ? 'border-transparent text-gray-400 hover:text-gray-300'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              📝 내가 등록한 질문
+              📝 내가 등록한 질문 ({userQuestions.length})
             </button>
             <button
-              onClick={() => setActiveTab('submissions')}
+              onClick={() => setActiveTab('answers')}
               className={`pb-4 font-semibold transition-colors border-b-2 ${
-                activeTab === 'submissions'
+                activeTab === 'answers'
                   ? 'border-blue-600 text-blue-600'
                   : isDarkMode
-                    ? 'border-transparent text-gray-400 hover:text-gray-300'
-                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                  ? 'border-transparent text-gray-400 hover:text-gray-300'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              💬 내가 제출한 답변
+              💬 내가 답변한 질문 ({userAnswers.length})
             </button>
           </div>
         </div>
 
-        {/* 질문 탭 */}
+        {/* 내가 등록한 질문 탭 */}
         {activeTab === 'questions' && (
           <div className="space-y-4">
             {loading ? (
               <div className={`p-8 text-center rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
                 <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>로딩 중...</p>
               </div>
-            ) : questions.length === 0 ? (
+            ) : userQuestions.length === 0 ? (
               <div className={`p-8 text-center rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
                 <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
                   등록한 질문이 없습니다
                 </p>
               </div>
             ) : (
-              questions.map(q => (
+              userQuestions.map(q => (
                 <div
                   key={q.id}
-                  className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}
+                  onClick={() => navigate(`/question/${q.id}`)}
+                  className={`p-6 rounded-lg cursor-pointer transition-transform hover:scale-102 ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:shadow-lg'}`}
                 >
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1">
                       <h3 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                         {q.title}
                       </h3>
-                      <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        등록일: {q.date}
+                      <p className={`text-sm mb-2 line-clamp-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {q.description || '설명 없음'}
+                      </p>
+                      <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                        등록일: {q.createdAt}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mb-2 ${q.status === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}`}>
-                        {q.status === 'open' ? '진행 중' : '해결됨'}
+                    <div className="text-right ml-4">
+                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mb-2 ${
+                        q.isResolved
+                          ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                          : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                      }`}>
+                        {q.isResolved ? '해결됨' : '진행 중'}
                       </span>
-                      <p className="text-lg font-bold text-blue-600">💰 {q.reward} ETH</p>
+                      <p className="text-lg font-bold text-blue-600">💰 {q.bountyAmount} ETH</p>
                     </div>
-                  </div>
-                  <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    답변 {q.answers}개
                   </div>
                 </div>
               ))
@@ -210,39 +265,47 @@ export function Profile() {
           </div>
         )}
 
-        {/* 답변 탭 */}
-        {activeTab === 'submissions' && (
+        {/* 내가 답변한 질문 탭 */}
+        {activeTab === 'answers' && (
           <div className="space-y-4">
             {loading ? (
               <div className={`p-8 text-center rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
                 <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>로딩 중...</p>
               </div>
-            ) : submissions.length === 0 ? (
+            ) : userAnswers.length === 0 ? (
               <div className={`p-8 text-center rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
                 <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
-                  제출한 답변이 없습니다
+                  답변한 질문이 없습니다
                 </p>
               </div>
             ) : (
-              submissions.map(s => (
+              userAnswers.map(a => (
                 <div
-                  key={s.answerId}
-                  className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}
+                  key={a.id}
+                  onClick={() => navigate(`/question/${a.questionId}`)}
+                  className={`p-6 rounded-lg cursor-pointer transition-transform hover:scale-102 ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:shadow-lg'}`}
                 >
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1">
                       <h3 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {s.title}
+                        {a.questionTitle}
                       </h3>
-                      <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        제출일: {s.date}
+                      <p className={`text-sm mb-2 line-clamp-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {a.summary}
+                      </p>
+                      <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                        제출일: {a.createdAt}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mb-2 ${s.status === 'unlocked' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}`}>
-                        {s.status === 'unlocked' ? '지불됨' : '대기 중'}
+                    <div className="text-right ml-4">
+                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mb-2 ${
+                        a.isUnlocked
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                      }`}>
+                        {a.isUnlocked ? '✅ 지불됨' : '⏳ 대기 중'}
                       </span>
-                      <p className="text-lg font-bold text-purple-600">💰 {s.reward} ETH</p>
+                      <p className="text-lg font-bold text-purple-600">💰 {a.bountyAmount} ETH</p>
                     </div>
                   </div>
                 </div>
